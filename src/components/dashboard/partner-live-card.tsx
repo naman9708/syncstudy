@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Lock, ListChecks, Timer } from "lucide-react";
+import { CheckCircle2, Circle, Flame, Lock, ListChecks, Timer } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -57,6 +57,8 @@ export function PartnerLiveCard({
 
   const tasks = progress?.taskStates ?? [];
   const completed = tasks.filter((t) => t.status === "completed").length;
+  const pending = tasks.filter((t) => t.status === "not_started").length;
+  const inProgress = tasks.filter((t) => t.status === "running" || t.status === "paused").length;
   const runningTask = tasks.find((t) => t.status === "running") ?? null;
   const studySeconds = useLiveTotalElapsed(tasks);
 
@@ -99,6 +101,40 @@ export function PartnerLiveCard({
                 {streak}-day streak
               </Badge>
             </div>
+
+            {tasks.length > 0 && (
+              <div className="rounded-md border bg-muted/30 p-2 text-sm">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ListChecks className="h-3 w-3" />
+                  Today’s task status
+                </div>
+                <div className="space-y-1.5">
+                  {tasks.map((task) => {
+                    const isCompleted = task.status === "completed";
+                    const isPending = task.status === "not_started";
+                    const isInProgress = task.status === "running" || task.status === "paused";
+
+                    return (
+                      <div key={task.taskId} className="flex items-center gap-2 text-sm">
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        ) : isInProgress ? (
+                          <Timer className="h-4 w-4 text-amber-600" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className={isCompleted ? "line-through text-muted-foreground" : ""}>
+                          {task.title}
+                        </span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {isCompleted ? "Done" : isInProgress ? "In progress" : "Pending"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
       </CardContent>
