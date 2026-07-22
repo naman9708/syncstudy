@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { CheckCircle2, Pause, Play, SkipForward, Timer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,18 +46,38 @@ export function TaskTimerRow({
   const [busy, setBusy] = useState(false);
   const liveSeconds = useLiveElapsed(task);
   const isDone = task.status === "completed" || task.status === "skipped";
+  const autoCompletedRef = useRef(false);
 
-  async function act(action: TaskAction) {
-    setBusy(true);
-    try {
-      await performTaskAction(uid, date, taskStates, task.taskId, action);
-      if (action === "complete") notify("Task completed", task.title);
-    } catch (error) {
-      toast.error(friendlyAuthError(error));
-    } finally {
-      setBusy(false);
+  const act = useCallback(
+    async (action: TaskAction) => {
+      setBusy(true);
+      try {
+        await performTaskAction(uid, date, taskStates, task.taskId, action);
+        if (action === "complete") notify("Task completed", task.title);
+      } catch (error) {
+        toast.error(friendlyAuthError(error));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [uid, date, taskStates, task.taskId, task.title]
+  );
+
+  // Auto-complete when the running elapsed time reaches the configured duration.
+  useEffect(() => {
+    if (task.status !== "running") {
+      // reset the auto-completed flag when not running so future runs can auto-complete again
+      autoCompletedRef.current = false;
+      return;
     }
-  }
+
+    const threshold = (task.durationMinutes ?? 0) * 60;
+    if (!autoCompletedRef.current && liveSeconds >= threshold && threshold > 0) {
+      autoCompletedRef.current = true;
+      // fire-and-forget — act will handle busy state and errors
+      void act("complete");
+    }
+  }, [liveSeconds, task.status, task.durationMinutes, act]);
 
   return (
     <Card className={cn(task.status === "running" && "border-primary/50 bg-accent/50")}>
