@@ -71,13 +71,22 @@ export function TaskTimerRow({
       return;
     }
 
-    const threshold = (task.durationMinutes ?? 0) * 60;
+    const duration = Number(task.durationMinutes ?? 0);
+    const threshold = Math.max(0, duration) * 60;
+    if (process.env.NODE_ENV === "development") {
+      // debug values for troubleshooting auto-complete behavior
+      // eslint-disable-next-line no-console
+      console.debug("auto-complete-check", { taskId: task.taskId, status: task.status, liveSeconds, threshold, busy });
+    }
+
+    if (busy) return;
+
     if (!autoCompletedRef.current && liveSeconds >= threshold && threshold > 0) {
       autoCompletedRef.current = true;
       // fire-and-forget — act will handle busy state and errors
       void act("complete");
     }
-  }, [liveSeconds, task.status, task.durationMinutes, act]);
+  }, [liveSeconds, task.status, task.durationMinutes, act, busy]);
 
   return (
     <Card className={cn(task.status === "running" && "border-primary/50 bg-accent/50")}>
