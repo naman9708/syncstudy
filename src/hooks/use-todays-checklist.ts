@@ -14,6 +14,7 @@ export function useTodaysChecklist() {
   const [date, setDate] = useState(() => todayDateString());
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const template = currentDayTemplate();
 
   // Check once a minute whether the local date has rolled over (e.g. a tab left open past midnight).
   useEffect(() => {
@@ -28,7 +29,6 @@ export function useTodaysChecklist() {
     if (!user || routinesLoading) return;
 
     let cancelled = false;
-    const template = currentDayTemplate();
     const tasksForToday = routines[template];
 
     ensureDailyProgress(user.uid, date, template, tasksForToday);
@@ -43,8 +43,7 @@ export function useTodaysChecklist() {
       cancelled = true;
       unsub();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, date, routinesLoading]);
+  }, [user, date, routinesLoading, template, routines]);
 
-  return { progress, loading: loading || routinesLoading, date, template: currentDayTemplate() };
+  return { progress, loading: loading || routinesLoading, date, template };
 }
